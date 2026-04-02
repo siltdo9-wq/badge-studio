@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badge Studio Restaurant - Réservation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #d4af37;
+            --gold-light: #f4e4a6;
+            --dark: #1a1a1a;
+            --darker: #0f0f0f;
+            --light: #f5f5f5;
+            --accent: #c9a227;
+            --glass: rgba(212, 175, 55, 0.1);
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-badge {
+            width: 120px;
+            height: 120px;
+            border: 3px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            animation: pulse-gold 2s infinite;
+            position: relative;
+        }
+
+        .loader-badge::before {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border: 2px solid transparent;
+            border-top-color: var(--gold-light);
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 20px var(--gold); }
+            50% { box-shadow: 0 0 40px var(--gold), 0 0 60px var(--gold-light); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            margin-top: 2rem;
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            color: var(--gold);
+            animation: fade-pulse 2s infinite;
+        }
+
+        @keyframes fade-pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(15,15,15,0.95), transparent);
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(15,15,15,0.98);
+            padding: 1rem 3rem;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: var(--gold);
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--glass), transparent);
+        }
+
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            position: relative;
+            padding: 0.5rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 0.8rem 2rem;
+            border: 1px solid var(--gold);
+            background: transparent;
+            color: var(--gold);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-cta:hover {
+            background: var(--gold);
+            color: var(--dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(15,15,15,0.7), rgba(15,15,15,0.9)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect fill="%23111" width="1200" height="800"/><text fill="%23222" font-size="20" x="50" y="50">Gastronomie</text><circle fill="%23d4af37" opacity="0.1" cx="200" cy="200" r="100"/><circle fill="%23d4af37" opacity="0.05" cx="800" cy="600" r="150"/></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            max-width: 900px;
+            padding: 2rem;
+        }
+
+        .hero-badge {
+            width: 150px;
+            height: 150px;
+            border: 3px solid var(--gold);
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--glass), rgba(212,175,55,0.05));
+            box-shadow: 0 0 60px rgba(212,175,55,0.3);
+            animation: float-badge 6s ease-in-out infinite;
+        }
+
+        @keyframes float-badge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .hero-badge-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-badge-text {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--gold);
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 300;
+            letter-spacing: 8px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: #888;
+            letter-spacing: 4px;
+            margin-bottom: 3rem;
+            font-style: italic;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.2rem 3rem;
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            color: var(--darker);
+            text-decoration: none;
+            font-weight: 600;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .hero-cta:hover::before {
+            left: 100%;
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(212,175,55,0.4);
+        }
+
+        /* Reservation Section */
+        .reservation-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(to bottom, var(--darker), var(--dark));
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            font-style: italic;
+        }
+
+        .reservation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        /* Info Cards */
+        .info-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+            border: 1px solid rgba(212,175,55,0.2);
+            padding: 2rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            border-color: var(--gold);
+            transform: translateX(10px);
+        }
+
+        .info-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--gold);
+        }
+
+        .info-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--gold-light);
+        }
+
+        .info-text {
+            color: #888;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        /* Reservation Form */
+        .reservation-form {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+            border: 1px solid rgba(212,175,55,0.3);
+            padding: 3rem;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reservation-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--accent), var(--gold));
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header h3 {
+            font-size: 1.8rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--gold);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212,175,55,0.3);
+            color: var(--light);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212,175,55,0.2);
+        }
+
+        select option {
+            background: var(--dark);
+            color: var(--light);
+        }
+
+        .date-input, .time-input {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold);
+            pointer-events: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            border: none;
+            color: var(--darker);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(212,175,55,0.4);
+        }
+
+        .submit-btn::after {
+            content: '→';
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .submit-btn:hover::after {
+            transform: translateX(5px);
+        }
+
+        /* Menu Preview */
+        .menu-section {
+            padding: 6rem 2rem;
+            background: var(--dark);
+        }
+
+        .menu-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .menu-item {
+            background: linear-gradient(135deg, rgba(212,175,55,0.05), transparent);
+            border: 1px solid rgba(212,175,55,0.2);
+            padding: 2rem;
+            border-radius: 12px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .menu-item:hover::before {
+            left: 100%;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .menu-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: var(--gold);
+            color: var(--dark);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            border-radius: 2px;
+        }
+
+        .menu-title {
+            font-size: 1.5rem;
+            color: var(--gold-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-desc {
+            color: #888;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .menu-price {
+            font-size: 1.3rem;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--darker);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(212,175,55,0.2);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            color: var(--gold);
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .footer-section p, .footer-section a {
+            color: #666;
+            text-decoration: none;
+            line-height: 2;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--gold);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(212,175,55,0.1);
+            color: #444;
+            font-size: 0.9rem;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            color: var(--darker);
+            padding: 1.5rem 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(212,175,55,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 9999;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .reservation-container {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 4px;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-badge">🍽️</div>
+        <div class="loader-text">BADGE STUDIO</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon">🍽️</div>
+            <span class="logo-text">BADGE STUDIO</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#accueil">Accueil</a></li>
+            <li><a href="#reservation">Réservation</a></li>
+            <li><a href="#menu">Menu</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <button class="nav-cta" onclick="scrollToReserve()">Réserver</button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="accueil">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <div class="hero-badge-icon">⭐</div>
+                <div class="hero-badge-text">Gastronomie</div>
+            </div>
+            <h1>BADGE STUDIO</h1>
+            <p class="hero-subtitle">L'excellence culinaire mérite un badge d'honneur</p>
+            <a href="#reservation" class="hero-cta">
+                <span>Réserver une table</span>
+                <span>→</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Reservation Section -->
+    <section class="reservation-section" id="reservation">
+        <div class="section-header">
+            <div class="section-badge">Réservation</div>
+            <h2>Réservez Votre Expérience</h2>
+            <p class="section-subtitle">Chaque repas chez Badge Studio est une célébration de la gastronomie</p>
+        </div>
+
+        <div class="reservation-container">
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-icon">📍</div>
+                    <h3 class="info-title">Adresse</h3>
+                    <p class="info-text">42 Avenue de la Gastronomie<br>75008 Paris, France</p>
+                </div>
+                <div class="info-card">
+                    <div class="info-icon">🕐</div>
+                    <h3 class="info-title">Horaires</h3>
+                    <p class="info-text">Lundi - Samedi<br>12h00 - 14h30 | 19h00 - 23h00</p>
+                </div>
+                <div class="info-card">
+                    <div class="info-icon">📞</div>
+                    <h3 class="info-title">Contact</h3>
+                    <p class="info-text">+33 1 23 45 67 89<br>reservation@badgestudio.fr</p>
+                </div>
+            </div>
+
+            <form class="reservation-form" id="bookingForm">
+                <div class="form-header">
+                    <h3>Formulaire de Réservation</h3>
+                    <p>Complétez les informations ci-dessous</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Nom complet</label>
+                        <input type="text" id="name" name="name" placeholder="Votre nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+33 6 12 34 56 78" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guests">Nombre de convives</label>
+                        <select id="guests" name="guests" required>
+                            <option value="">Sélectionnez</option>
+                            <option value="1">1 personne</option>
+                            <option value="2">2 personnes</option>
+                            <option value="3">3 personnes</option>
+                            <option value="4">4 personnes</option>
+                            <option value="5">5 personnes</option>
+                            <option value="6">6 personnes</option>
+                            <option value="7+">7 personnes ou plus</option>
+                        </select>
+                    </div>
+                    <div class="form-group date-input">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date" required>
+                        <span class="input-icon">📅</span>
+                    </div>
+                    <div class="form-group time-input">
+                        <label for="time">Heure</label>
+                        <select id="time" name="time" required>
+                            <option value="">Sélectionnez</option>
+                            <optgroup label="Déjeuner">
+                                <option value="12:00">12h00</option>
+                                <option value="12:30">12h30</option>
+                                <option value="13:00">13h00</option>
+                                <option value="13:30">13h30</option>
+                                <option value="14:00">14h00</option>
+                            </optgroup>
+                            <optgroup label="Dîner">
+                                <option value="19:00">19h00</option>
+                                <option value="19:30">19h30</option>
+                                <option value="20:00">20h00</option>
+                                <option value="20:30">20h30</option>
+                                <option value="21:00">21h00</option>
+                                <option value="21:30">21h30</option>
+                            </optgroup>
+                        </select>
+                        <span class="input-icon">🕐</span>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="occasion">Occasion spéciale (optionnel)</label>
+                        <select id="occasion" name="occasion">
+                            <option value="">Aucune occasion particulière</option>
+                            <option value="anniversaire">Anniversaire</option>
+                            <option value="romantique">Dîner romantique</option>
+                            <option value="business">Repas d'affaires</option>
+                            <option value="famille">Réunion de famille</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="requests">Demandes spéciales</label>
+                        <textarea id="requests" name="requests" placeholder="Allergies, préférences alimentaires, ou toute demande particulière..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Confirmer la Réservation</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Menu Preview -->
+    <section class="menu-section" id="menu">
+        <div class="section-header">
+            <div class="section-badge">Menu</div>
+            <h2>Nos Créations Signature</h2>
+            <p class="section-subtitle">Des plats qui méritent leur badge d'excellence</p>
+        </div>
+
+        <div class="menu-grid">
+            <div class="menu-item">
+                <span class="menu-badge">Signature</span>
+                <h3 class="menu-title">Badge d'Or</h3>
+                <p class="menu-desc">Foie gras mi-cuit, réduction de Porto vintage, pain brioché toasté aux flocons d'or comestibles</p>
+                <div class="menu-price">45€</div>
+            </div>
+            <div class="menu-item">
+                <span class="menu-badge">Chef</span>
+                <h3 class="menu-title">L'Étoile du Studio</h3>
+                <p class="menu-desc">Homard bleu rôti, beurre blanc aux herbes fines, légumes de saison glacés</p>
+                <div class="menu-price">68€</div>
+            </div>
+            <div class="menu-item">
+                <span class="menu-badge">Nouveau</span>
+                <h3 class="menu-title">Le Médaillon</h3>
+                <p class="menu-desc">Filet de bœuf Wagyu A5, sauce au vin de truffe, purée de pommes de terre ratte</p>
+                <div class="menu-price">85€</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Badge Studio</h4>
+                <p>L'excellence culinaire mérite<br>un badge d'honneur</p>
+                <p style="margin-top: 1rem;">⭐ Restaurant gastronomique</p>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>📍 42 Avenue de la Gastronomie<br>75008 Paris</p>
+                <p>📞 +33 1 23 45 67 89</p>
+                <p>✉️ reservation@badgestudio.fr</p>
+            </div>
+            <div class="footer-section">
+                <h4>Horaires</h4>
+                <p>Lundi - Samedi</p>
+                <p>Déjeuner : 12h - 14h30</p>
+                <p>Dîner : 19h - 23h</p>
+                <p>Fermé le Dimanche</p>
+            </div>
+            <div class="footer-section">
+                <h4>Liens</h4>
+                <p><a href="#">Mentions légales</a></p>
+                <p><a href="#">Politique de confidentialité</a></p>
+                <p><a href="#">Conditions de réservation</a></p>
+                <p><a href="#">Recrutement</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Badge Studio Restaurant. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2000);
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Set minimum date to today
+        const dateInput = document.getElementById('date');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+
+        // Form submission
+        document.getElementById('bookingForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            // Simulate API call
+            const btn = e.target.querySelector('.submit-btn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Traitement...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                showToast(`✅ Réservation confirmée pour ${data.name} ! Un email de confirmation a été envoyé à ${data.email}`);
+                btn.textContent = originalText;
+                btn.disabled = false;
+                e.target.reset();
+            }, 1500);
+        });
+
+        // Toast function
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }
+
+        // Scroll to reservation
+        function scrollToReserve() {
+            document.getElementById('reservation').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add parallax effect to hero badge
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.hero-badge');
+            if (parallax) {
+                parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        });
+    </script>
+</body>
+</html>
